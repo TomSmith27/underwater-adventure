@@ -1,8 +1,9 @@
 import * as express from 'express';
 import * as socketIo from 'socket.io';
-import { ChatEvent } from './constants';
+import { ChatEvent } from '../../shared/constants';
 import { ChatMessage } from './types';
 import { createServer, Server } from 'http';
+import { Room, Player } from './Room';
 var cors = require('cors');
 
 export class ChatServer {
@@ -11,7 +12,8 @@ export class ChatServer {
   private server: Server;
   private io: SocketIO.Server;
   private port: string | number;
-  private allMessages: ChatMessage[] = [];
+  private allMessages: ChatMessage[] = [{ author: 'Tom', message: 'test' }];
+  private rooms: Room[] = [new Room('XAJ8')];
 
   constructor() {
     this._app = express();
@@ -31,19 +33,35 @@ export class ChatServer {
     this.server.listen(this.port, () => {
       console.log('Running server on port %s', this.port);
     });
-
-    this.io.on(ChatEvent.CONNECT, (socket: any) => {
+    this.io.on(ChatEvent.CONNECT, (socket: SocketIO.Socket) => {
       console.log('Connected client on port %s.', this.port);
-      console.log(this.allMessages);
-      this.io.emit('connected', this.allMessages);
-      socket.on(ChatEvent.MESSAGE, (m: ChatMessage) => {
-        console.log('[server](message): %s', JSON.stringify(m));
-        this.allMessages.push(m);
-        this.io.emit('message', m);
-      });
-
+      socket.emit(ChatEvent.CONNECTED, this.rooms);
       socket.on(ChatEvent.DISCONNECT, () => {
         console.log('Client disconnected');
+        //Someone left this room
+        var room = this.rooms.find((r) => r.players.some((s) => s.id == socket.id));
+        room.players.splice(room.players.findIndex((p) => p.id == socket.id));
+        if (room.players.length == 0) {
+          this.rooms = this.rooms.filter((r) => r.code != room.code);
+        }
+        this.io.emit(ChatEvent.ROOM_UPDATED, this.rooms);
+      });
+
+      socket.on(ChatEvent.CREATE_ROOM, ({ name }: { name: string }) => {
+        console.log(name);
+        var newRoom = new Room('okda');
+        newRoom.players = [{ id: socket.id, name }];
+        this.rooms.push(newRoom);
+        this.io.emit(ChatEvent.ROOM_UPDATED, this.rooms);
+      });
+
+      socket.on(ChatEvent.JOIN_ROOM, ({ code, name }: { code: string; name: string }) => {
+        let room = this.rooms.find((r) => r.code == code);
+        if (room.players.some((p) => p.id == socket.id)) {
+          return;
+        }
+        room.players.push(new Player(socket.id, name));
+        this.io.emit(ChatEvent.ROOM_UPDATED, this.rooms);
       });
     });
   }
