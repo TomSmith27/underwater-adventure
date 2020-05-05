@@ -7,4 +7,6 @@ export enum ChatEvent {
   JOIN_ROOM = 'join_room',
   CREATE_ROOM = 'create_room',
   JOIN_ROOMED = 'JOIN_ROOMED',
+  BEGIN_GAME = 'begin_game',
+  GAME_BEGIN = 'game_begin',
 }

@@ -14,7 +14,7 @@ export class ChatServer {
   private io: SocketIO.Server;
   private port: string | number;
   private allMessages: ChatMessage[] = [{ author: 'Tom', message: 'test' }];
-  private rooms: Room[] = [new Room('XAJ8')];
+  private rooms: Room[] = [new Room('dev')];
 
   constructor() {
     this._app = express();
@@ -45,7 +45,7 @@ export class ChatServer {
           if (room.players) {
             room.players.splice(room.players.findIndex((p) => p.id == socket.id));
             if (room.players.length == 0) {
-              this.rooms = this.rooms.filter((r) => r.code != room.code);
+              // this.rooms = this.rooms.filter((r) => r.code != room.code && room.code != 'dev');
             }
           }
           this.io.emit(ChatEvent.ROOM_UPDATED, this.rooms);
@@ -67,6 +67,18 @@ export class ChatServer {
 
         room.players.push(new Player(socket.id, name, false));
         this.io.emit(ChatEvent.ROOM_UPDATED, this.rooms);
+        room.startGame();
+
+        console.log(room);
+        console.log(room.round1.playersInRound);
+        console.table(room.round1.tiles);
+      });
+
+      socket.on(ChatEvent.BEGIN_GAME, (code: string) => {
+        console.log(ChatEvent.BEGIN_GAME);
+        let room = this.rooms.find((r) => r.code == code);
+        room.startGame();
+        this.io.emit(ChatEvent.GAME_BEGIN, room);
       });
     });
   }

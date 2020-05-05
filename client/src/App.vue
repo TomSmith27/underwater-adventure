@@ -12,9 +12,20 @@
       <button @click="joinRoom(room.code)">Join</button>
     </div>
     <div>
-      <button @click="createRoom">Create Room</button>
+      <button class="btn btn-primary" @click="createRoom">Create Room</button>
+      <button class="btn btn-primary" v-if="roomCode" @click="beginGame">Begin Game</button>
     </div>
-    {{ socket.id }}
+    <div v-if="game" class="container">
+      {{ game.round1.playersInRound[game.round1.currentPlayerIndex].player.name }}'s Turn
+      <div class="btn btn-info">THE SHIP Air = {{ game.round1.air }}</div>
+      <div :key="tile" v-for="(tile, index) in game.round1.tiles" class="btn-block btn btn-primary">
+        {{ tile }}
+        <span v-if="game.round1.playersInRound.find((f) => f.position == index)">
+          {{ game.round1.playersInRound.find((f) => f.position == index).player.name }}
+        </span>
+      </div>
+    </div>
+    {{ game }}
   </div>
 </template>
 
@@ -34,6 +45,8 @@ export default Vue.extend({
       name: '',
       socket: {} as SocketIOClient.Socket,
       rooms: [] as Room[],
+      roomCode: null,
+      game: null as Room,
     };
   },
   created() {
@@ -47,13 +60,20 @@ export default Vue.extend({
     this.socket.on(ChatEvent.ROOM_UPDATED, (rooms: Room[]) => {
       this.rooms = rooms;
     });
+    this.socket.on(ChatEvent.GAME_BEGIN, (game) => {
+      this.game = game;
+    });
   },
   methods: {
     joinRoom(code: string) {
+      this.roomCode = code;
       this.socket.emit(ChatEvent.JOIN_ROOM, { code, name: this.name });
     },
     createRoom() {
       this.socket.emit(ChatEvent.CREATE_ROOM, { name: this.name });
+    },
+    beginGame() {
+      this.socket.emit(ChatEvent.BEGIN_GAME, this.roomCode);
     },
   },
 });
