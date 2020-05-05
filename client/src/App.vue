@@ -8,11 +8,13 @@
     <div :key="room.code" v-for="room in rooms">
       {{ room.code }}
       {{ room.players }}
+
       <button @click="joinRoom(room.code)">Join</button>
     </div>
     <div>
       <button @click="createRoom">Create Room</button>
     </div>
+    {{ socket.id }}
   </div>
 </template>
 

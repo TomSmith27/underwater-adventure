@@ -3,7 +3,8 @@ import * as socketIo from 'socket.io';
 import { ChatEvent } from '../../shared/constants';
 import { ChatMessage } from './types';
 import { createServer, Server } from 'http';
-import { Room, Player } from './Room';
+import { Room } from './Room';
+import { Player } from './Player';
 var cors = require('cors');
 
 export class ChatServer {
@@ -40,27 +41,31 @@ export class ChatServer {
         console.log('Client disconnected');
         //Someone left this room
         var room = this.rooms.find((r) => r.players.some((s) => s.id == socket.id));
-        room.players.splice(room.players.findIndex((p) => p.id == socket.id));
-        if (room.players.length == 0) {
-          this.rooms = this.rooms.filter((r) => r.code != room.code);
+        if (room) {
+          if (room.players) {
+            room.players.splice(room.players.findIndex((p) => p.id == socket.id));
+            if (room.players.length == 0) {
+              this.rooms = this.rooms.filter((r) => r.code != room.code);
+            }
+          }
+          this.io.emit(ChatEvent.ROOM_UPDATED, this.rooms);
         }
-        this.io.emit(ChatEvent.ROOM_UPDATED, this.rooms);
       });
 
       socket.on(ChatEvent.CREATE_ROOM, ({ name }: { name: string }) => {
-        console.log(name);
         var newRoom = new Room('okda');
-        newRoom.players = [{ id: socket.id, name }];
+        newRoom.players = [new Player(socket.id, name, true)];
         this.rooms.push(newRoom);
         this.io.emit(ChatEvent.ROOM_UPDATED, this.rooms);
       });
 
       socket.on(ChatEvent.JOIN_ROOM, ({ code, name }: { code: string; name: string }) => {
-        let room = this.rooms.find((r) => r.code == code);
-        if (room.players.some((p) => p.id == socket.id)) {
+        if (this.rooms.some((r) => r.players.some((p) => p.id == socket.id))) {
           return;
         }
-        room.players.push(new Player(socket.id, name));
+        let room = this.rooms.find((r) => r.code == code);
+
+        room.players.push(new Player(socket.id, name, false));
         this.io.emit(ChatEvent.ROOM_UPDATED, this.rooms);
       });
     });
