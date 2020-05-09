@@ -9,4 +9,5 @@ export enum ChatEvent {
   JOIN_ROOMED = 'JOIN_ROOMED',
   BEGIN_GAME = 'begin_game',
   GAME_BEGIN = 'game_begin',
+  ROLL = 'roll',
 }

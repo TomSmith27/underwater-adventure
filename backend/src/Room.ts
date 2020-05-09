@@ -11,6 +11,9 @@ export class Room {
   public startGame() {
     this.round1 = new Round(this.players, generateRound1());
   }
+  public roll() {
+    this.round1.move();
+  }
   public startRound2() {}
 }
 
@@ -24,16 +27,16 @@ function generateRound1() {
     triangles.push(new Tile(i, 'Triangle'));
   }
   for (let i = 0; i < 4; i++) {
-    squares.push(new Tile(i, 'Square'));
-    squares.push(new Tile(i, 'Square'));
+    squares.push(new Tile(i + 4, 'Square'));
+    squares.push(new Tile(i + 4, 'Square'));
   }
   for (let i = 0; i < 4; i++) {
-    pentagons.push(new Tile(i, 'Pentagon'));
-    pentagons.push(new Tile(i, 'Pentagon'));
+    pentagons.push(new Tile(i + 8, 'Pentagon'));
+    pentagons.push(new Tile(i + 8, 'Pentagon'));
   }
   for (let i = 0; i < 4; i++) {
-    hexagons.push(new Tile(i, 'Hexagon'));
-    hexagons.push(new Tile(i, 'Hexagon'));
+    hexagons.push(new Tile(i + 12, 'Hexagon'));
+    hexagons.push(new Tile(i + 12, 'Hexagon'));
   }
   return [...shuffle(triangles), ...shuffle(squares), ...shuffle(pentagons), ...shuffle(hexagons)];
 
@@ -57,17 +60,34 @@ export class Round {
   public air: number = 25;
   public currentPlayerIndex: number = 0;
   public playersInRound: PlayerRound[];
-  public tiles: Tile[];
+  public tiles: Tile[] = [];
   public get currentPlayer() {
     return this.playersInRound[this.currentPlayerIndex];
   }
   public beginTurn() {
     this.air -= this.currentPlayer.tiles.length;
   }
+  private roll() {
+    return (Math.random() * (3 - 0 + 1)) << 0;
+  }
   public move() {
-    const moveSpaces = 3 - this.currentPlayer.tiles.length;
+    const roll = this.roll() + this.roll();
+    console.log('Tim rolled a ', roll);
+    const moveSpaces = Math.max(roll - this.currentPlayer.tiles.length, 0);
+    console.log(`${this.currentPlayer.player.name} but had ${this.currentPlayer.tiles.length} so ended up with a  ${moveSpaces}`);
+    this.currentPlayer.position = this.currentPlayer.position + (this.currentPlayer.goingUp ? -moveSpaces : moveSpaces);
+    this.takeTile();
 
-    this.currentPlayer.position = this.currentPlayer.goingUp ? -moveSpaces : moveSpaces;
+    this.currentPlayerIndex++;
+    if (this.currentPlayerIndex >= this.playersInRound.length) {
+      this.currentPlayerIndex = 0;
+    }
+    this.beginTurn();
+  }
+  public takeTile() {
+    if (this.tiles[this.currentPlayer.position].type != 'Blank') {
+      this.currentPlayer.tiles.push(...this.tiles.splice(this.currentPlayer.position, 1, ...[new Tile(0, 'Blank')]));
+    }
   }
 }
 
@@ -87,4 +107,4 @@ export class Tile {
   public value: number;
 }
 
-export type TileType = 'Triangle' | 'Square' | 'Pentagon' | 'Hexagon';
+export type TileType = 'Triangle' | 'Square' | 'Pentagon' | 'Hexagon' | 'Blank';

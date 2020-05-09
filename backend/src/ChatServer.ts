@@ -80,6 +80,12 @@ export class ChatServer {
         room.startGame();
         this.io.emit(ChatEvent.GAME_BEGIN, room);
       });
+
+      socket.on(ChatEvent.ROLL, (code: string) => {
+        let room = this.rooms.find((r) => r.code == code);
+        room.roll();
+        this.io.emit(ChatEvent.GAME_BEGIN, room);
+      });
     });
   }
 
