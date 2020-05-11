@@ -8,6 +8,10 @@
       <path d="M0 0H64V64H0V0Z" fill="#43A9AF" />
       <text x="40%" y="70%" font-family="Verdana" font-size="20" fill="#C4C4C4">{{ tile.value }}</text>
     </svg>
+    <svg v-if="tile.type == 'Pentagon'" xmlns="http://www.w3.org/2000/svg" width="62" height="58" viewBox="0 0 62 58" fill="none">
+      <path d="M31 0L61.4338 22.1115L49.8091 57.8885H12.1909L0.566191 22.1115L31 0Z" fill="#43A9AF" />
+      <text x="40%" y="70%" font-family="Verdana" font-size="20" fill="#C4C4C4">{{ tile.value }}</text>
+    </svg>
     <svg v-if="tile.type == 'Hexagon'" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
       <path d="M32 0L59.7128 16V48L32 64L4.28719 48V16L32 0Z" fill="#43A9AF" />
       <text x="30%" y="60%" font-family="Verdana" font-size="20" fill="#C4C4C4">{{ tile.value }}</text>

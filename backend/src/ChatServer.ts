@@ -54,7 +54,7 @@ export class ChatServer {
 
       socket.on(ChatEvent.CREATE_ROOM, ({ name }: { name: string }) => {
         var newRoom = new Room('okda');
-        newRoom.players = [new Player(socket.id, name, true)];
+        newRoom.players = [new Player(socket, socket.id, name, true)];
         this.rooms.push(newRoom);
         this.io.emit(ChatEvent.ROOM_UPDATED, this.rooms);
       });
@@ -65,12 +65,21 @@ export class ChatServer {
         }
         let room = this.rooms.find((r) => r.code == code);
 
-        room.players.push(new Player(socket.id, name, false));
-        this.io.emit(ChatEvent.ROOM_UPDATED, this.rooms);
+        room.players.push(new Player(socket, socket.id, name, false));
+        this.io.emit(
+          ChatEvent.ROOM_UPDATED,
+          this.rooms.map((m) => ({
+            code: m.code,
+            players: m.players.map((p) => ({
+              name: p.name,
+              id: p.id,
+              isAdmin: p.isAdmin,
+            })),
+          }))
+        );
         room.startGame();
-
-        console.log(room);
-        console.log(room.round1.playersInRound);
+        // console.log(room);
+        // console.log(room.round1.playersInRound);
         console.table(room.round1.tiles);
       });
 

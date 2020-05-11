@@ -1,36 +1,41 @@
 <template>
-  <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png" />
-    <HelloWorld msg="Welcome to Your Vue.js + TypeScript App" />
-    <h3>Lobbies</h3>
-    <label for>Name</label>
-    <input type="text" v-model="name" />
-    <div :key="room.code" v-for="room in rooms">
-      {{ room.code }}
-      {{ room.players }}
-      <button @click="joinRoom(room.code)">Join</button>
-    </div>
-    <div>
+  <div id="app" class="container">
+    <h1>Underwater Adventure</h1>
+    <div v-if="!roomCode">
+      <label for>Name</label>
+      <input type="text" v-model="name" />
+
       <button class="btn btn-primary" @click="createRoom">Create Room</button>
-      <button class="btn btn-primary" v-if="roomCode" @click="beginGame">Begin Game</button>
-      <button @click="roll">Roll</button>
+
+      <h3>Open Games</h3>
+
+      <p class="border shadow-sm" :key="room.code" v-for="room in rooms">
+        <b-btn @click="joinRoom(room.code)" variant="link">{{room.code}}</b-btn>
+        <span>Players :</span>
+        <span :key="player.id" v-for="player in room.players">{{player.name}}</span>
+      </p>
     </div>
-    <div v-if="game" class="container">
-      {{ game.round1.playersInRound[game.round1.currentPlayerIndex].player.name }}'s Turn
-      <div class="btn btn-info">THE SHIP Air = {{ game.round1.air }}</div>
-      <div :key="tile" v-for="(tile, index) in game.round1.tiles" class="d-flex py-2">
+    <div v-if="roomCode">
+      <h4>You are in game {{roomCode}}</h4>
+      <b-card :key="player.id" v-for="player in currentRoom.players">{{player.name}}</b-card>
+      <button class="btn btn-primary" v-if="roomCode" @click="beginGame">Begin Game</button>
+    </div>
+    <div v-if="room">
+      <button @click="roll">Roll</button>
+      {{ room.round1.playersInRound[room.round1.currentPlayerIndex].player.name }}'s Turn
+      <div class="btn btn-info">THE SHIP Air = {{ room.round1.air }}</div>
+      <div :key="tile" v-for="(tile, index) in room.round1.tiles" class="d-flex py-2">
         <tile :tile="tile" />
         {{ tile }}
-        <span v-if="game.round1.playersInRound.find((f) => f.position == index)">{{ game.round1.playersInRound.filter((f) => f.position == index).map(p => p.player.name) }}</span>
+        <span v-if="room.round1.playersInRound.find((f) => f.position == index)">{{ room.round1.playersInRound.filter((f) => f.position == index).map(p => p.player.name) }}</span>
       </div>
     </div>
-    {{ game }}
+    {{ room }}
   </div>
 </template>
 
 <script lang="ts">
 import Vue from 'vue';
-import HelloWorld from './components/HelloWorld.vue';
 import io from 'socket.io-client';
 import { ChatEvent } from '../../shared/constants';
 import { Room } from '../../backend/src/Room';
@@ -38,7 +43,6 @@ import Tile from '@/components/Tile.vue';
 export default Vue.extend({
     name: 'App',
     components: {
-        HelloWorld,
         Tile
     },
     data() {
@@ -46,12 +50,13 @@ export default Vue.extend({
             name: 'Tim',
             socket: {} as SocketIOClient.Socket,
             rooms: [] as Room[],
-            roomCode: null,
-            game: null as Room
+            roomCode: '',
+            room: null as Room | null
         };
     },
     created() {
         this.socket = io('http://localhost:8080');
+
         this.socket.on(ChatEvent.CONNECT, (data: Room[]) => {
             this.rooms = data;
         });
@@ -61,8 +66,8 @@ export default Vue.extend({
         this.socket.on(ChatEvent.ROOM_UPDATED, (rooms: Room[]) => {
             this.rooms = rooms;
         });
-        this.socket.on(ChatEvent.GAME_BEGIN, game => {
-            this.game = game;
+        this.socket.on(ChatEvent.GAME_BEGIN, room => {
+            this.room = room;
         });
     },
     methods: {
@@ -78,6 +83,11 @@ export default Vue.extend({
         },
         roll() {
             this.socket.emit(ChatEvent.ROLL, this.roomCode);
+        }
+    },
+    computed: {
+        currentRoom(): Room | null {
+            return this.rooms.find(r => r.code == this.roomCode) ?? null;
         }
     }
 });
